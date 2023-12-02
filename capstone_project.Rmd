@@ -1,0 +1,427 @@
+---
+title: "Capstone Project for Google Data Analytics"
+author: "Thi Truong"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(dplyr)
+```
+ 
+
+# **GOOGLE DATA ANALYTICS CAPSTONE PROJECT**
+
+## **Case Study 1**: How Does a Bike-Share Navigate Speady Success?
+
+### Introduction 
+
+Google Data Analytics Capstone Project - Case Study 1: The Cyclistic bike-share case study. In this case study, you will perform many real-world tasks of a junior data analyst, working for Cyclistic company, and meet different characters and team members. 
+
+The project will be following the steps of the data analysis process: ask, prepare, process, analyze, share, and act to answer business questions.Along the way, the Case Study Roadmap tables — including guiding questions and key tasks — will help you stay on the right path.
+
+### Scenario
+
+You are a junior data analyst working in the marketing analyst team at Cyclistic, a bike-share company in Chicago. The director of marketing believes the company’s future success depends on maximizing the number of annual memberships. Therefore, your team wants to understand how casual riders and annual members use Cyclistic bikes differently. From these insights, your team will design a new marketing strategy to convert casual riders into annual members. But first, Cyclistic executives must approve your recommendations, so they must be backed up with compelling data insights and professional data visualizations.
+
+### Characters and teams
+
+* Cyclistic: A bike-share program that features more than 5,800 bicycles and 600 docking stations. Cyclistic sets itself apart by also offering reclining bikes, hand tricycles, and cargo bikes, making bike-share more inclusive to people with disabilities and riders who can’t use a standard two-wheeled bike. The majority of riders opt for traditional bikes; about 8% of riders use the assistive options. Cyclistic users are more likely to ride for leisure, but about 30% use them to commute to work each day.
+
+* Lily Moreno: The director of marketing and your manager. Moreno is responsible for the development of campaigns and initiatives to promote the bike-share program. These may include email, social media, and other channels.
+
+* Cyclistic marketing analytics team: A team of data analysts who are responsible for collecting, analyzing, and reporting data that helps guide Cyclistic marketing strategy. You joined this team six months ago and have been busy learning about Cyclistic’s mission and business goals — as well as how you, as a junior data analyst, can help Cyclistic achieve them.
+
+* Cyclistic executive team: The notoriously detail-oriented executive team will decide whether to approve the recommended marketing program.
+
+### Ask
+
+__Key tasks__
+
+1. Identify the business task
+2. Consider key stakeholders 
+
+__Deliverable__
+
+Determine the differences between causal riders and Cyclistic memberships, and create market strategies for increasing the amount of annual memberships.
+
+ 
+
+### Prepare
+
+You will use Cyclistic’s historical trip data to analyze and identify trends. 
+
+**_Note_**: For the purposes of this case study, the datasets are appropriate and will enable you to answer the business questions. The data has been made available by Motivate International Inc. under this
+license.
+
+
+__Key tasks__
+
+1. Download data and store it appropriately.
+2. Identify how it’s organized.
+3. Sort and filter the data.
+4. Determine the credibility of the data.
+
+__Deliverable__
+
+A description of all data sources used: The data source consists of 7 csv files with the period of time from January 2023 to July 2023
+
+### Process
+
+```{r}
+#importing the data
+
+tripdata_202301 <- read.csv("/Users/thitruong/Desktop/for-jobs-DA/SQL/capstone_project/2023-divvy-datatrip/202301-divvy-tripdata.csv")
+tripdata_202302 <- read.csv("/Users/thitruong/Desktop/for-jobs-DA/SQL/capstone_project/2023-divvy-datatrip/202302-divvy-tripdata.csv")
+tripdata_202303 <- read.csv("/Users/thitruong/Desktop/for-jobs-DA/SQL/capstone_project/2023-divvy-datatrip/202303-divvy-tripdata.csv")
+tripdata_202304 <- read.csv("/Users/thitruong/Desktop/for-jobs-DA/SQL/capstone_project/2023-divvy-datatrip/202304-divvy-tripdata.csv")
+tripdata_202305 <- read.csv("/Users/thitruong/Desktop/for-jobs-DA/SQL/capstone_project/2023-divvy-datatrip/202305-divvy-tripdata.csv")
+tripdata_202306 <- read.csv("/Users/thitruong/Desktop/for-jobs-DA/SQL/capstone_project/2023-divvy-datatrip/202306-divvy-tripdata.csv")
+tripdata_202307 <- read.csv("/Users/thitruong/Desktop/for-jobs-DA/SQL/capstone_project/2023-divvy-datatrip/202307-divvy-tripdata.csv")
+```
+
+__Key tasks__
+
+1. Check the data for errors.
+2. Choose your tools.
+3. Transform the data so you can work with it effectively.
+4. Document the cleaning process.
+
+__Deliverable__
+
+Documentation of any cleaning or manipulation of data
+
+
+```{r}
+# viewing the data
+str(tripdata_202301)
+str(tripdata_202302)
+str(tripdata_202303)
+str(tripdata_202304)
+str(tripdata_202305)
+str(tripdata_202306)
+str(tripdata_202307)
+```
+
+
+First of all, we need to combine existence datasets into one dateset for analysis
+
+```{r}
+#combining data into one dataset
+tripdata_2023 <- rbind(tripdata_202301,tripdata_202302, tripdata_202303,
+                       tripdata_202304,tripdata_202305, tripdata_202306,tripdata_202307)
+
+# Remove lat, long fields - since we will not use the information for this case study
+tripdata_2023 <- tripdata_2023 %>%  
+  select(-c(start_lat, start_lng, end_lat, end_lng))
+```
+
+Now the data:
+
+```{r}
+glimpse(tripdata_2023)
+```
+**Data Cleaning**
+
+* Remove all missing values or NA and duplicates cells
+
+```{r}
+#removing all NA cell
+tripdata_2023 <- drop_na(tripdata_2023) 
+
+#removing duplicate cells
+tripdata_2023_no_duplicates <- tripdata_2023[!duplicated(tripdata_2023$ride_id),]
+print(paste("Removed", nrow(tripdata_2023) - nrow(tripdata_2023_no_duplicates), "duplicate rows"))
+```
+
+Because of 0 duplicate row, we will use _"tripdata_2023"_ data frame for analysis.
+
+**Data Manipulation**
+
+* Adding a column *date*, *day*, *month*, *day_of_week* of each ride to the data:
+
+```{r}
+tripdata_2023$date <- as.Date(tripdata_2023$started_at) #date column
+tripdata_2023$day <- format(as.Date(tripdata_2023$date), "%d") #day column
+tripdata_2023$month <- format(as.Date(tripdata_2023$date), "%m") #month column
+tripdata_2023$day_of_week <- format(as.Date(tripdata_2023$date), "%A") # add day_of_week for a ride
+```
+
+* Calculating lengths of a ride
+
+```{r}
+#named as "ride_length"
+tripdata_2023 <- mutate(tripdata_2023, ride_length = difftime(ended_at, started_at, units = "mins"))
+```
+
+The data after having changes:
+
+```{r}
+# Inspect the data frame and look for incongruities
+str(tripdata_2023)
+```
+
+* Checking amount of member and casual of rider
+
+```{r}
+number_of_rides <- table(tripdata_2023$member_casual); number_of_rides
+```
+
+Calculating the percentage of members based on the above table:
+```{r}
+percents_of_member <- round((1998830/(1159279+1998830)*100),2)
+print(paste("There are", percents_of_member,"% of them are members"))
+```
+
+* Remove data, where trips with a ride length is less than 0
+
+```{r}
+nrow(tripdata_2023[tripdata_2023$ride_length < 0,])
+
+#rename the data
+tripdata_2023_ver1 <- tripdata_2023[!tripdata_2023$ride_length <0,]
+str(tripdata_2023_ver1) #view data
+```
+
+### Analyze
+
+__Key tasks__
+
+1.Aggregate your data so it’s useful and accessible.
+
+2. Organize and format your data.
+
+3. Perform calculations.
+
+4. Identify trends and relationships.
+
+__Deliverable__
+
+A summary of your analysis
+
+```{r}
+# statistical analysis of data
+trip_stats <- tripdata_2023_ver1 %>% 
+  group_by(member_casual) %>% 
+  summarise(min_ride_length = min(ride_length), average_ride_length = mean(ride_length), median_ride_length = median(ride_length),max_ride_length = max(ride_length), standard_deviation = sd(ride_length))
+head(trip_stats)
+```
+
+```{r}
+# compare members and casual riders
+
+tripdata_2023_ver1 %>% 
+  aggregate(ride_length ~ member_casual, FUN = min) #min
+
+tripdata_2023_ver1 %>% 
+  aggregate(ride_length ~ member_casual, FUN = mean) #mean
+
+tripdata_2023_ver1 %>% 
+  aggregate(ride_length ~ member_casual, FUN = max) #max
+```
+
+
+Casual have a higher average ride length comparing to member, which is double in length.
+
+```{r}
+#The average ride length by each date for riders
+tripdata_2023_ver1 %>% 
+  aggregate(ride_length ~ member_casual + day_of_week, FUN = mean) %>% 
+  group_by(day_of_week)
+```
+
+
+```{r}
+# Analyzing ridership data by weekday and type of riders
+
+#make the days of weeks in the order
+tripdata_2023_ver1$day_of_week <- ordered(tripdata_2023_ver1$day_of_week, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+
+tripdata_2023_ver1 %>% 
+  group_by(member_casual, day_of_week) %>% 
+  summarise(number_of_rides = n(), average_ride_length = mean(ride_length)) %>% 
+  arrange(member_casual,day_of_week)
+  
+```
+
+- Saturday has the highest average ride length for both casual riders, and Sunday for member. That is reasonable, since people tend to going out or spending time outside on the weekends.
+
+- For member, the lowest average ride length is on Wednesday. On the other hand, the lowest average ride length is on Thursday for casual rides. 
+
+
+```{r}
+# Determining the most popular days
+most_day <- tripdata_2023_ver1 %>% 
+  group_by(day) %>% 
+  summarise(number_of_rides = n(), average_duration = mean(ride_length)) %>% 
+  arrange(-number_of_rides)
+head(most_day) #most 6 days
+```
+
+The most popular days in a month is following by 15, 10, 21, 23, 24, 20. Based on the result, riders tends to have a ride on the last days of a month. Personally, this result could be a random resul, which I'm interested to have a deep study in this trend.
+
+```{r}
+#convert month data type to string
+tripdata_2023_ver1$month <- format(as.Date(tripdata_2023_ver1$date), "%b")
+```
+
+```{r}
+# Determining the most popular months
+most_month <- tripdata_2023_ver1 %>% 
+  group_by(month) %>% 
+  summarise(number_of_rides = n(), average_duration = mean(ride_length)) %>% 
+  arrange(-number_of_rides)
+most_month
+```
+
+
+As the result, July, June, and May are the top three popular months for riding. The result is totally reasonable, since these months are summer and people love spending time outside or outdoor activities
+
+
+```{r}
+# Create mode() function to calculate mode
+mode <- function(x, na.rm = FALSE) {
+  
+  if(na.rm){ #if na.rm is TRUE, remove NA values from input x
+    x = x[!is.na(x)]
+  }
+
+  val <- unique(x)
+  return(val[which.max(tabulate(match(x, val)))])
+}
+```
+
+```{r}
+# Determining the most for the day of week
+most_weekday <- mode(tripdata_2023_ver1$day_of_week); print(most_weekday)
+```
+
+The most-riding day of week is Saturday following by Friday. And Sunday is the least-riding day - with this result, it's kind of a "surprised" finding to me. People are likely going out on the weekends, so there would be more numbers of ride. Another reason could explain for the finding is customers using bicyle for going work on the weekdays, so the number of rides on the weekdays are higher than on Sunday. 
+
+```{r}
+## Determine the most popular start station for members
+popular_start_station_members <- tripdata_2023_ver1 %>% 
+  filter(member_casual == 'member') %>% 
+  group_by(start_station_name) %>% 
+  summarise(number_of_starts = n()) %>% 
+  filter(start_station_name != "") %>% 
+  arrange(- number_of_starts)
+head(popular_start_station_members)
+```
+
+The most popular start stations for members are mostly around Downtown Chicago neighborhoods, such as North River, West Loop, Near North Side, and near Lincoln Park, and one station in the south side of the city. The findings are reliable, since people living in/near Downtown would be likely choose riding instead of driving due to traffic and parking. 
+
+
+```{r}
+## Determine the most popular start station for casual
+popular_start_station_casual <- tripdata_2023_ver1 %>% 
+  filter(member_casual == 'casual') %>% 
+  group_by(start_station_name) %>% 
+  summarise(number_of_starts = n()) %>% 
+  filter(start_station_name != "") %>% 
+  arrange(- number_of_starts)
+head(popular_start_station_casual)
+```
+
+The most popular start stations for casual are located famous-visting place in Chicago, such as Navy Pier, Millennium Park, and beaches near downtown. That's totally understandable for the finding because there are many tourists visit the locations, and likely using rides to travel to their destinations. 
+
+### Share
+
+__Key tasks__
+
+1. Determine the best way to share your findings.
+2. Create effective data visualizations.
+3. Present your findings.
+4. Ensure your work is accessible.
+
+__Deliverable__
+
+Supporting visualizations and key findings
+
+```{r}
+# Visualization of the rider types
+
+tripdata_2023_ver1 %>% 
+  group_by(member_casual) %>% 
+  summarise(number_of_rides = n()) %>% 
+  ggplot(aes(x= member_casual, y = number_of_rides, fill = member_casual)) +
+  geom_col(position = "dodge") + geom_text(aes(label = number_of_rides, vjust = -0.5))
+  
+```
+
+```{r}
+# Visualization of the rider types duration
+avg_duration_by_rider_types <- tripdata_2023_ver1 %>% 
+  group_by(member_casual) %>% 
+  summarize(average_ride_length = mean(ride_length))
+
+avg_duration_by_rider_types %>% 
+  ggplot(aes(x = member_casual, y = average_ride_length, fill = member_casual)) +
+  geom_col(position = "dodge") + geom_text(aes(label = average_ride_length, vjust = -0.5))
+```
+
+
+```{r}
+# Visualization of number of ride by ride types by the days of week
+tripdata_2023_ver1 %>% 
+  group_by(member_casual, day_of_week) %>% 
+  summarise(number_of_rides = n(), average_ride_length = mean(ride_length)) %>%
+  arrange(member_casual, day_of_week) %>% 
+  ggplot(aes(x = day_of_week, y = number_of_rides, fill = member_casual)) +
+  geom_col(position = "dodge")
+```
+
+
+
+```{r}
+# Visualization of average of ride length by rider types by the days of a week
+
+tripdata_2023_ver1 %>% 
+  group_by(member_casual, day_of_week) %>% 
+  summarise(number_of_rides = n(), average_ride_length = mean(ride_length)) %>% 
+  arrange(member_casual, day_of_week) %>% 
+  ggplot(aes(x = day_of_week, y = average_ride_length, fill = member_casual)) +
+  geom_col(position = "dodge")
+``` 
+
+
+```{r}
+#make month in the order
+tripdata_2023_ver1$m <- ordered(tripdata_2023_ver1$month, levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
+```
+
+
+```{r}
+# Visualization of the average ride length by members and casual riders by the month
+tripdata_2023_ver1 %>% 
+  group_by(member_casual, month) %>% 
+  summarise(number_of_rides = n(), average_ride_length = mean(ride_length)) %>% 
+  arrange(member_casual, month) %>% 
+  ggplot(aes(x = month, y = average_ride_length, fill = member_casual)) +
+  geom_col(position = "dodge") + geom_text(aes(label = number_of_rides, angle = 90)) +
+  facet_wrap(~member_casual)
+```
+
+```{r}
+# Visualization of the number of trips by members and casual riders by the month
+tripdata_2023_ver1 %>% 
+  group_by(member_casual, month) %>% 
+  summarise(number_of_rides = n()) %>% 
+  arrange(member_casual, month) %>% 
+  ggplot(aes(x = month, y = number_of_rides, fill = member_casual)) +
+  geom_col(position = "dodge") + geom_text(aes(label = number_of_rides, angle = 90)) +
+  facet_wrap(~member_casual)
+```
+
+### Act
+
+The project has yielded intriguing findings regarding variations in the average ride length between casual riders and members, the distribution of ride types across different days of the week and months, as well as the primary starting locations for distinct rider types. Additionally, there is room for further analysis, including the identification of the most common end stations for each rider type, forecasting the number of riders for the upcoming year, and exploring differences in ride numbers between winter and summer.
+
+
